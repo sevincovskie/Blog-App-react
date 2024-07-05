@@ -1,30 +1,71 @@
-import React from "react";
-import { Box, Input, SimpleGrid, Text } from "@chakra-ui/react";
+import React, { useEffect, useState } from "react";
+import {
+  Box,
+  Button,
+  Input,
+  SimpleGrid,
+  Spinner,
+  Text,
+} from "@chakra-ui/react";
 import Header from "../../components/header";
 import BlogCard from "../../components/BlogCard";
 import ShowNavigate from "../../components/ShowNavigate";
+import { getBlogs } from "../../services/articles";
+import { useNavigate } from "react-router-dom";
+import { useFetchData } from "../../hooks/useFetchData";
+import Loading from "../../components/Loading";
+import SearchBox from "../../components/SearchBox";
 
 function Articles() {
+  const navigate = useNavigate();
+
+  const [searchData, setSearchData] = useState();
+
+  const { data, loading } = useFetchData({
+    requestFunction: () => getBlogs(),
+  });
+
+  useEffect(() => {
+    
+      setSearchData(data);
+    
+  }, [data]);
+
+  const handleSearch = (text) => {
+    if (!text.trim()){
+      setSearchData(data);
+      return;
+    }
+    const filterData = searchData?.filter((item) =>
+      item.title.toLowerCase().includes(text.toLowerCase())
+      // new RegExp(text,"i").test(item.title)
+    );
+    setSearchData(filterData)
+  };
+
   return (
     <>
       <Header />
-      <Box p={10}>
-        <Input
-          color="tomato"
-          placeholder="search..."
-          _placeholder={{ opacity: 0.4, color: "inherit" }}
-        />
+      <Box px={50}>
         <ShowNavigate />
+        <SearchBox onSearch={handleSearch} />
       </Box>
-
-      <SimpleGrid columns={{ sm: 2 }} spacing="5">
-        <BlogCard />
-        <BlogCard />
-        <BlogCard />
-        <BlogCard />
-        <BlogCard />
-        <BlogCard />
-      </SimpleGrid>
+      {loading ? (
+        <Loading />
+      ) : (
+        <SimpleGrid columns={{ sm: 2 }} spacing="10">
+          {searchData
+            ?.filter((item, index) => item.id > 90)
+            ?.map((item) => (
+              <BlogCard
+                key={"blog-id" + item.id}
+                {...item}
+                onReadMore={() => navigate("/articles/" + item.id)}
+              />
+            ))}
+          {/* <BlogCard /> */}
+        </SimpleGrid>
+      )}
     </>
   );
 }
